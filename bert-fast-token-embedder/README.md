@@ -2,8 +2,8 @@
 
 ## Summary 
 
-As a context-sensitive language model, [BERT]() takes as input a larger text of limited size (e.g. sentence) and provides a contextualized vector embedding for each token of the text.
-This is in contrast to context-free language models (e.g. [fasttext]()), which map tokens to a vector without further information on the context given.
+As a context-sensitive language model, [BERT](https://arxiv.org/abs/1810.04805) takes as input a larger text of limited size (e.g. sentence) and provides a contextualized vector embedding for each token of the text.
+This is in contrast to context-free language models (e.g. [fasttext](https://github.com/facebookresearch/fastText)), which map tokens to a vector without further information on the context given.
 
 We present a context-free word embedding generated from averaged BERT-processed embeddings of word contexts, in order to analyze and compare the structural properties of the resulting vector space.
 
@@ -21,11 +21,11 @@ We finalize by aggregating that set of vectors by taking the arithmetic mean.
 
 We face two difficulties in implementing that approach:
 
-(a) The BERT language model uses a [WordPiece]() sequence as input tokens (further referred to as *piece*).
+* The BERT language model uses a [WordPiece](https://arxiv.org/abs/1609.08144) sequence as input tokens (further referred to as *piece*).
 This embedding maps each word to at least one piece from a fixed vocabulary (size approx. 30k).
 Note that given the embedding of multiple pieces constituting a single word, we cannot infer a sensible embedding of that word.
 
-(b) Especially with a high-frequency focus word, the above outlined aggregation can only be performed with significant computation time.
+* Especially with a high-frequency focus word, the above outlined aggregation can only be performed with significant computation time.
 Hence, we wish to preprocess and cache as many word-vector associations as possible.
 In general, we cannot apply this to every unique word of the corpus due to the large number.
 This implies that we face a space-time tradeoff.
@@ -37,7 +37,7 @@ We continue by presenting the implementation in three steps: first, a preprocess
 As it is central to efficiently determine the BERT-prepared context sequences of a given focus word, we preprocess given corpus.
 Assume the corpus as a set of documents consisting only text.
 
-First, for each document, split the text into sentences (here, it is implemented using [Syntok]()).
+First, for each document, split the text into sentences (here, it is implemented using [Syntok](https://github.com/fnl/syntok)).
 Then, each sentence can be transformed to a piece sequence.
 This results in a document representation consisting of a piece sequence, that also allows the sentence boundaries to be read.
 The preprocessed documents can subsequently written on disk.
@@ -107,7 +107,7 @@ python makecache.py cachewords $PROCESSED_CORPUS $CACHE
 
 See `embedder.py` file:
 * `BertEmbedder(indexdir, docdir, cache_picle, bert_model, bert_tokenizer)`  
-  Embedder constructor, give `indexdir`, `docdir`, `cache_pickle` as strings; `bert_model` resp. `bert_tokenizer` as [`transformers.BertModel`]() resp. [`transformers.BertTokenizer`]().
+  Embedder constructor, give `indexdir`, `docdir`, `cache_pickle` as strings; `bert_model` resp. `bert_tokenizer` as [`transformers.BertModel`](https://huggingface.co/transformers/model_doc/bert.html#bertmodel) resp. [`transformers.BertTokenizer`](https://huggingface.co/transformers/model_doc/bert.html#berttokenizer).
   
 * `BertEmbedder.compute_embedding(self, word)`  
   Given string `word`, computes the output embedding as outlined in Sec. *Cache Miss Procedure*, using the index and processed corpus.
@@ -120,4 +120,39 @@ See `embedder.py` file:
   
 ### Example
 
+```python
+import torch
+from transformers import BertTokenizer, BertModel, BertConfig
+from embedder import BertEmbedder
 
+config = BertConfig.from_pretrained("bert-base-german-cased", output_hidden_states=True)
+tokenizer = BertTokenizer.from_pretrained("bert-base-german-cased")
+model = BertModel.from_pretrained("bert-base-german-cased", config=config)
+model.to('cuda')
+
+model.eval()
+torch.set_grad_enabled(False)
+
+embedder = BertEmbedder(indexdir='indexdir', docdir='processed_corpus',
+        cache_pickle='cachefile.pl', bert_model=model, bert_tokenizer=tokenizer)
+
+# embed word
+embedder.embed('Unmöglichkeit')
+# observe that the token is split into two pieces: ['Un', '##möglichkeit']
+# returns tensor of shape [2, 13, 768]:
+# tensor([[[-0.3489,  0.5044,  0.3678,  ..., -1.5239, -0.9979, -0.3289],
+#          [-0.2173,  0.7550,  0.1045,  ..., -0.9457, -0.7756, -0.2617],
+#          [ 0.2841,  0.3570, -0.4009,  ..., -0.6682, -0.4641, -0.5449],
+#          ...,
+#          [ 0.6555,  0.6270, -0.7339,  ...,  1.4157,  0.3457, -0.3370],
+#          [ 0.4427,  0.3215, -0.5317,  ...,  1.0440,  0.4267, -0.2955],
+#          [ 0.6560,  0.3177,  0.2431,  ...,  0.7445,  0.6516, -0.4647]],
+#
+#         [[ 0.6231, -0.1010,  0.9392,  ...,  0.4587, -0.5650, -0.7968],
+#          [-0.0180, -0.0901,  0.2420,  ...,  0.6077, -0.1154, -0.3848],
+#          [ 0.1130, -0.0888, -0.1231,  ...,  0.3450,  0.5666, -0.1898],
+#          ...,
+#          [-0.1236,  0.8450, -0.7257,  ...,  0.4887,  0.2776, -0.5623],
+#          [-0.4489,  0.5725, -0.5801,  ...,  0.4962,  0.5719, -0.6368],
+#          [-0.2603,  0.7459,  0.0532,  ...,  0.5482,  0.6203, -0.6134]]])
+```
