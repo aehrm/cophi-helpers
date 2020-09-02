@@ -50,7 +50,7 @@ By indexing on the pieces (and not words), the resulting index remains relativel
 
 Storing the positions of the occurrences allows the efficient search for term phrases (i.e. words tokenized into >1 pieces) using the reverse index.
 
-TODO N-gram space-time tradeoff
+(We implement the reverse index using the Python [Whoosh](https://github.com/mchaput/whoosh) package)
 
 ### Cache Miss Procedure
 
@@ -94,10 +94,10 @@ export CACHE=./cachefile.pl                # name of cachefile to generate
 python makeindex.py $CORPUS $PROCESSED_CORPUS $INDEXDIR
 
 # determine frequencies
-python frequencies.py $CORPUS > frequencies.tsv
+python frequencies.py $PROCESSED_CORPUS > frequencies.tsv
 
 # get cache words (10k most frequent ones)
-head -n 10000 frequencies.tsv | cut -d2 > cachewords
+head -n 10000 frequencies.tsv | cut -f1 > cachewords
 
 # generate cache
 python makecache.py cachewords $PROCESSED_CORPUS $CACHE
