@@ -45,9 +45,13 @@ class BertEmbedder:
         return cached[0:lastnonzero + 1]
 
     def compute_embedding(self, word):
-        return torch.stack(list(
-            more_itertools.collapse(map(self.forwardpass, more_itertools.chunked(self.query_index(word), 10)),
-                                    levels=1))).mean(0)
+        embeddings = list(
+            more_itertools.collapse(map(self.forwardpass, more_itertools.chunked(self.query_index(word), 10))))
+
+        if len(embeddings) > 0:
+            return torch.stack(embeddings, levels=1).mean(0)
+        else:
+            return None
 
     def tokenize(self, word):
         return self.tokenizer.tokenize(word)
