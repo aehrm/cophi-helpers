@@ -47,7 +47,9 @@ def make_sequences(sents):
     acc = []
     for sent in sents:
         if len(sent) > 510:
-            print("Sentence longer than 510 tokens", file=sys.stderr)
+            print("Sentence longer than 510 tokens, splitting sentence", file=sys.stderr)
+            for subseq in more_itertools.chunked(sent, 510):
+                yield subseq
             continue
 
         if len(acc) + len(sent) > 510:

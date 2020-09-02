@@ -91,16 +91,32 @@ class BertEmbedder:
         if tokenend + 1 < len(context) and context[tokenend + 1].startswith('##'):
             return None
 
-        indices = [(-1) ** ((j + 1) % 2) * (j // 2) for j in range(0, len(doc))]  # -1, 1, -2, 2, ...
+        if len(context) > 510:
+            # exceptional behavior: center context independent of sentence boundaries
+            print("context sentence longer than 510 tokens, centering on focus word", file=sys.stderr)
 
+            # extend context on the left
+            i = sentidx - 1
+            while i > 0 and tokenstart < 260:
+                context = doc[i] + context
+                tokenstart += len(doc[i])
+                tokenend += len(doc[i])
+                i = i - 1
+            # extend context on the right
+            i = sentidx + 1
+            while i - 1 < len(doc) and len(context) - tokenend < 260:
+                context = context + doc[i]
+                i = i + 1
+
+            # extract context window
+            contextstart = tokenstart - 250
+            contextend = tokenstart + 250
+            return (context[contextstart:contextend], 250, 250 + tokenend - tokenstart)
+
+        # regular behavior: add sentences left and right until max size reached
         breakleft = False
         breakright = False
-        if len(context) > 510:
-            print("context sentence longer than 510 tokens", file=sys.stderr)
-            # breakleft = True
-            # breakright = True
-            return None  # TODO
-
+        indices = [(-1) ** ((j + 1) % 2) * (j // 2) for j in range(0, len(doc))]  # -1, 1, -2, 2, ...
         for j, i in enumerate(indices):
             if breakleft and breakright:
                 break
