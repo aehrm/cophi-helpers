@@ -90,6 +90,8 @@ export PROCESSED_CORPUS=./processed_corpus # empty dir
 export INDEXDIR=./indexdir                 # empty dir
 export CACHE=./cachefile.pl                # name of cachefile to generate
 
+pip install -r requirements.txt
+
 # preprocess corpus
 python makeindex.py $CORPUS $PROCESSED_CORPUS $INDEXDIR
 
