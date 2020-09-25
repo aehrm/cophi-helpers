@@ -137,8 +137,8 @@ class TrainingManager:
                                             'train_loss': [], 'val_loss': []}
         print(
             f"Training classifier on {len(train_dataset)} datapoints ({len(validation_dataset)} validation datapoints)")
-        best_val_loss = math.inf
-        best_classifier = None
+        best_val_losses = [math.inf] * len(self.classes)
+        best_classifiers = [None] * len(self.classes)
         t = tqdm(total=len(train_dataset) * epochs, ncols=150)
         for epoch_i in range(0, epochs):
             model.train()
@@ -149,12 +149,12 @@ class TrainingManager:
                 b_labels = batch[3].to(device)
                 model.zero_grad()
                 outputs = model(b_input_ids, attention_mask=b_input_mask, labels=b_labels)
-                eval_loss = outputs[0]
-                eval_loss.backward()
+                loss = outputs[0].sum()
+                loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
                 scheduler.step()
-                train_loss = eval_loss.detach().cpu().numpy() / b_labels.shape[0]
+                train_loss = loss.detach().cpu().numpy() / b_labels.shape[0]
                 self.status_object['train_info']['train_loss'].append(train_loss)
                 if len(self.status_object['train_info']['val_loss']) > 0:
 
@@ -170,26 +170,31 @@ class TrainingManager:
             model.eval()
             model.zero_grad()
             torch.set_grad_enabled(False)
-            eval_loss = 0
+            eval_losses = [0] * len(self.classes)
             for step, batch in enumerate(validation_dataloader):
                 b_input_ids = batch[0].to(device)
                 b_input_mask = batch[1].to(device)
                 b_labels = batch[3].to(device)
                 outputs = model(b_input_ids, attention_mask=b_input_mask, labels=b_labels)
-                eval_loss += outputs[0].detach().cpu().numpy()
+                losses = outputs[0].detach().cpu().numpy()
+                for i in range(len(self.classes)):
+                    eval_losses[i] += losses[i]
 
             # store best model w.r.t. the validation set
-            if best_classifier is None or eval_loss < best_val_loss:
-                best_val_loss = eval_loss
-                best_classifier = model.classifier.state_dict()
+            for i in range(len(self.classes)):
+                if best_classifiers[i] is None or eval_losses[i] < best_val_losses[i]:
+                    best_val_losses[i] = eval_losses[i]
+                    best_classifiers[i] = model.classifiers[i].state_dict()
 
-            self.status_object['train_info']['val_loss'].append(eval_loss / len(validation_dataset))
+            self.status_object['train_info']['val_loss'].append(sum(eval_losses) / len(validation_dataset))
             t.set_postfix({'epoch': epoch_i,
                            'train': f"{self.status_object['train_info']['train_loss'][-1]:.3e}",
                            'val': f"{self.status_object['train_info']['val_loss'][-1]:.3e}"})
         t.close()
 
-        model.classifier.load_state_dict(best_classifier)
+        # restore best model
+        for i in range(len(self.classes)):
+            model.classifiers[i].load_state_dict(best_classifiers[i])
         model.eval()
         model.zero_grad()
         torch.set_grad_enabled(False)
@@ -224,7 +229,7 @@ class TrainingManager:
             self.status_object['result'][cl] = classification_report(label, pred, output_dict=True)
             print(classification_report(label, pred))
 
-            # store classification
+        # store classification
         self.classification_output = pandas.DataFrame(list(classification.items()),
                                                       columns=['filename', 'predicted_labels'])
         self.status_object['stage'] = 'done'

@@ -14,8 +14,10 @@ class BertForBRSequenceClassification(BertPreTrainedModel):
 
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        # stacking (binary) classifier per each label
-        self.classifier = nn.Linear(config.hidden_size, 2 * self.num_labels)
+        # binary classifier per each label
+        self.classifiers = [nn.Linear(config.hidden_size, 2)] * self.num_labels
+        for i, c in enumerate(self.classifiers):
+            self.add_module(f'classifier-class-{i+1}', c)
 
         self.init_weights()
 
@@ -49,16 +51,13 @@ class BertForBRSequenceClassification(BertPreTrainedModel):
         )
 
         pooled_output = outputs[1]
-
         pooled_output = self.dropout(pooled_output)
-        label_binary_logits = self.classifier(pooled_output).view(-1, self.num_labels, 2)
+        label_binary_logits = torch.stack([c(pooled_output) for c in self.classifiers])
 
         loss = None
         if labels is not None:
             loss_fct = CrossEntropyLoss(reduction='sum')
-            loss = torch.tensor(0, dtype=torch.float32).to(label_binary_logits.device)
-            for logits, labels in zip(label_binary_logits.permute(1,0,2), labels.long().permute(1,0)):
-                loss += loss_fct(logits, labels)
+            loss = torch.stack([loss_fct(logits, labels) for (logits, labels) in zip(label_binary_logits, labels.long().permute(1,0))])
 
-        output = (label_binary_logits,) + outputs[2:]
+        output = (label_binary_logits.permute(1,0,2),) + outputs[2:]
         return ((loss,) + output) if loss is not None else output
