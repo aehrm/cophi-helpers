@@ -53,7 +53,9 @@ const getData = () => getJSON('/api/status').then((res) => {
         data.train_info.batch_size = data.train_info.train_data / data.train_info.batches;
 
     if (data.result)
-        data.result.accuracy = {'f1-score': data.result.accuracy, 'support': data.result["macro avg"].support}
+        Object.values(data.result).forEach((r) => {
+            r.accuracy = {'f1-score': r.accuracy, 'support': r["macro avg"].support};
+        });
 
 });
 
@@ -106,20 +108,22 @@ function createEvalTable() {
     let tableBody = document.createElement('tbody');
     tableBody.innerHTML += '<thead><tr><th></th><th>Precision</th><th>Recall</th><th>F1-score</th><th>Support</th></tr></thead>';
 
-    [...Object.keys(data.result)].forEach((rowKey) => {
-        let row = document.createElement('tr');
-        row.innerHTML = `<td>${rowKey}</td>`;
+    Object.values(data.result).forEach((classResult) => {
+        tableBody.innerHTML += '<tr style="border-bottom:1px solid black"><td colspan="100%"></td></tr>';
+        [...Object.keys(classResult)].forEach((rowKey) => {
+            let row = `<td>${rowKey}</td>`;
 
-        ['precision', 'recall', 'f1-score', 'support'].forEach(function (colKey) {
-            if (data.result[rowKey][colKey] !== undefined) {
-                const digits = colKey == 'support' ? 0 : 2;
-                row.innerHTML += `<td>${data.result[rowKey][colKey].toFixed(digits)}</td>`
-            } else {
-                row.innerHTML += `<td></td>`;
-            }
+            ['precision', 'recall', 'f1-score', 'support'].forEach(function (colKey) {
+                if (classResult[rowKey][colKey] !== undefined) {
+                    const digits = colKey == 'support' ? 0 : 2;
+                    row += `<td>${classResult[rowKey][colKey].toFixed(digits)}</td>`
+                } else {
+                    row += `<td></td>`;
+                }
+            });
+            tableBody.innerHTML += row;
         });
 
-        tableBody.appendChild(row);
     });
 
     table.appendChild(tableBody);

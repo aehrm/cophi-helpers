@@ -52,7 +52,7 @@ async def upload_batch(request):
             return web.Response(status=400)
 
         labeled_docs = body['labeled_docs']
-        df = pandas.DataFrame.from_records(labeled_docs, columns=['filename', 'label']).dropna()
+        df = pandas.DataFrame.from_records(labeled_docs, columns=['filename', 'labels']).dropna()
         app['manager'].add_labeled(df)
         return web.json_response({'message': 'Labeled documents added'})
     except json.JSONDecodeError:

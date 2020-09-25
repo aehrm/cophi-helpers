@@ -19,6 +19,7 @@ const app = {};
 
 app.processLabelBatch = function(data) {
     app.documents = data.docs;
+    app.documents.forEach(d => { d.labels = {} });
 
     document.querySelector('.label-overview').innerHTML = '<span></span>'.repeat(data.docs.length);
     document.querySelector('#date').innerHTML = new Date(data.date).toLocaleString();
@@ -38,11 +39,11 @@ app.focusDoc = function(index) {
     const doc = app.documents[index];
     document.querySelector('#docid').innerHTML = `${index+1}/${app.documents.length}`;
     document.querySelector('#filename').innerHTML = doc.filename;
-    document.querySelector('#prediction').innerHTML = doc['predicted_label'];
+    document.querySelector('#prediction').innerHTML = doc['predicted_labels'];
     document.querySelector('#doc-content').innerHTML = doc.content;
 
     document.querySelectorAll('.label-button').forEach((el) => {
-        if (el.attributes['data-label'] == doc.label) {
+        if (doc.labels[el.attributes['data-label'].value]) {
             el.classList.add('selected');
         } else {
             el.classList.remove('selected');
@@ -50,19 +51,27 @@ app.focusDoc = function(index) {
     });
 };
 
-app.setLabel = function(label) {
+app.setLabel = function(label, val) {
     const doc = app.documents[app.curindex];
-    doc.label = label;
+    doc.labels[label] = val;
 
     const indicator = document.querySelectorAll('.label-overview span')[app.curindex];
-    if (!!label) {
+    if (Object.values(doc.labels).reduce((a,b) => a || b, false)) {
         indicator.classList.add('labeled');
     } else {
         indicator.classList.remove('labeled');
     }
 
+    if (label == 'O' && val) {
+        doc.labels = {'O': true};
+    }
+
+    if (label != 'O' && val) {
+        doc.labels['O'] = false;
+    }
+
     document.querySelectorAll('.label-button').forEach((el) => {
-        if (el.attributes['data-label'].value == doc.label) {
+        if (doc.labels[el.attributes['data-label'].value]) {
             el.classList.add('selected');
         } else {
             el.classList.remove('selected');
@@ -95,14 +104,18 @@ app.start = function() {
 };
 
 app.upload = function() {
-    if (app.documents.some(d => !d.label)) {
+    if (app.documents.some(d => Object.values(d.labels).reduce((a,b) => a || b, false))) {
         if (!confirm('Some documents not labeled; proceed with upload?')) {
             return;
         }
     }
 
-    const obj = {'labeled_docs': app.documents.map(d => { return {'filename': d.filename, 'label': d.label} })};
-    var xhr = new XMLHttpRequest();
+    const obj = {'labeled_docs': []};
+    obj['labeled_docs'] = app.documents.filter(d => Object.values(d.labels).reduce((a,b) => a || b, false))
+        .map(d => {
+            return {'filename': d.filename, 'labels': Object.entries(d.labels).filter(x => x[1]).map(x => x[0]) }
+        });
+    let xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/uploadbatch',  true);
     xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
     xhr.send(JSON.stringify(obj));
@@ -129,9 +142,9 @@ document.querySelector('.control-button:last-child').addEventListener('click', (
 });
 document.querySelectorAll('.label-button').forEach(el => el.addEventListener('click', () => {
     if (el.classList.contains('selected')) {
-        app.setLabel(undefined);
+        app.setLabel(el.attributes['data-label'].value, false);
     } else {
-        app.setLabel(el.attributes['data-label'].value);
+        app.setLabel(el.attributes['data-label'].value, true);
     }
 }));
 document.querySelector('#submit').addEventListener('click', () => app.upload());
