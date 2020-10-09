@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import json
 import sys
@@ -68,8 +69,15 @@ async def shutdown_handler(app):
     sys.exit(1)
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--port', default=8000, type=int)
+parser.add_argument('--train-batch-size', default=8, type=int)
+parser.add_argument('--classify-batch-size', default=8, type=int)
+args = parser.parse_args()
+
 app = web.Application()
-app['manager'] = TrainingManager(document_dir='./poems', labeled_documents_file='./labeled_documents.tsv')
+app['manager'] = TrainingManager(document_dir='./poems', labeled_documents_file='./labeled_documents.tsv',
+                                 train_batch_size=args.train_batch_size, classify_batch_size=args.classify_batch_size)
 
 app.router.add_get('/api/status', status)
 app.router.add_get('/api/starttrain', start)
@@ -80,4 +88,4 @@ app.router.add_get('/', index)
 app.on_startup.append(start_train_wrapper)
 app.on_shutdown.append(shutdown_handler)
 
-web.run_app(app, host='127.0.0.1', port=9999 if len(sys.argv) < 2 else int(sys.argv[1]))
+web.run_app(app, host='127.0.0.1', port=args.port)

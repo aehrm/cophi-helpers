@@ -106,7 +106,7 @@ app.start = function () {
 };
 
 app.upload = function () {
-    if (app.documents.some(d => Object.values(d.labels).reduce((a, b) => a || b, false))) {
+    if (!app.documents.every(d => Object.values(d.labels).reduce((a,b) => a || b, false))) {
         if (!confirm('Some documents not labeled; proceed with upload?')) {
             return;
         }

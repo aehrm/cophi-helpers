@@ -21,7 +21,7 @@ from model import BertForBRSequenceClassification
 
 class TrainingManager:
 
-    def __init__(self, document_dir='./poems', labeled_documents_file='./labeled_documents.tsv'):
+    def __init__(self, document_dir='./poems', labeled_documents_file='./labeled_documents.tsv', train_batch_size=8, classify_batch_size=8):
         self.pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.tokenizer = BertTokenizer.from_pretrained("bert-base-german-dbmdz-cased", padding="max_length",
                                                        truncation=True)
@@ -31,6 +31,9 @@ class TrainingManager:
         self.document_dir = document_dir
         self.documents = [f for f in listdir(document_dir) if os.path.isfile(os.path.join(document_dir, f))]
         self.classes = ['Natur', 'Liebe']
+
+        self.train_batch_size = train_batch_size
+        self.classify_batch_size = classify_batch_size
 
         self.classification_output = None
         self.status_object = {}
@@ -100,21 +103,25 @@ class TrainingManager:
         self.status_object = {'stage': 'init',
                               'startdate': datetime.datetime.now().astimezone().replace(microsecond=0).isoformat()}
 
+        validation_set = self.labeled_documents.sample(frac=0.2)
+        train_set = self.labeled_documents.drop(validation_set.index)
         X = self.labeled_documents['filename']
         Y = self.labeled_documents['labels'].apply(lambda x: multihot(set(x.split(','))))
-        # TODO how to stratifiy?
-        X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=0.20)
+        X_train = X[train_set.index]
+        X_val = X[validation_set.index]
+        Y_train = Y[train_set.index]
+        Y_val = Y[validation_set.index]
 
         # prepare dataloader
         train_dataset = DocDataset(X_train.to_list(), tokenize_method=self._get_sequence, labels=Y_train.to_list(),
                                    cache=True)
         train_sampler = RandomSampler(train_dataset)
-        train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=8)
+        train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=self.train_batch_size)
 
         validation_dataset = DocDataset(X_val.to_list(), tokenize_method=self._get_sequence, labels=Y_val.to_list(),
                                         cache=True)
         validation_sampler = SequentialSampler(validation_dataset)
-        validation_dataloader = DataLoader(validation_dataset, sampler=validation_sampler, batch_size=8)
+        validation_dataloader = DataLoader(validation_dataset, sampler=validation_sampler, batch_size=self.train_batch_size)
 
         # init model
         model = BertForBRSequenceClassification.from_pretrained("bert-base-german-dbmdz-cased",
@@ -164,7 +171,7 @@ class TrainingManager:
                 else:
                     t.set_postfix({'epoch': epoch_i,
                                    'train': f"{self.status_object['train_info']['train_loss'][-1]:.3e}"})
-                t.update(b_labels.size()[0])
+                t.update(b_labels.shape[0])
 
             # evaluate against validation set
             model.eval()
@@ -205,7 +212,7 @@ class TrainingManager:
         # classify on entire dataset
         classify_dataset = DocDataset(self.documents, tokenize_method=self._get_sequence)
         classify_sampler = RandomSampler(classify_dataset)
-        classify_dataloader = DataLoader(classify_dataset, sampler=classify_sampler, batch_size=8)
+        classify_dataloader = DataLoader(classify_dataset, sampler=classify_sampler, batch_size=self.classify_batch_size)
         classification = dict()
 
         t = tqdm(total=len(classify_dataset))
@@ -221,11 +228,11 @@ class TrainingManager:
             self.status_object['predict_info']['labeled'] += len(b_filenames)
         t.close()
 
-        # for each class, print F1 score over all labeled documents
+        # for each class, print F1 score over validation set
         self.status_object['result'] = dict()
         for cl in self.classes:
-            pred = self.labeled_documents['filename'].apply(lambda x: cl if cl in classification[x] else 'Non-' + cl)
-            label = self.labeled_documents['labels'].apply(lambda x: cl if cl in x.split(',') else 'Non-' + cl)
+            pred = validation_set['filename'].apply(lambda x: cl if cl in classification[x] else 'Non-' + cl)
+            label = validation_set['labels'].apply(lambda x: cl if cl in x.split(',') else 'Non-' + cl)
             self.status_object['result'][cl] = classification_report(label, pred, output_dict=True)
             print(classification_report(label, pred))
 
