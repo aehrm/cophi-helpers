@@ -1,5 +1,6 @@
 import concurrent.futures
 import datetime
+import gc
 import itertools
 import math
 import os.path
@@ -46,7 +47,14 @@ class TrainingManager:
 
     def start_training(self):
         self.future = self.pool.submit(self._train_and_classify)
+        self.future.add_done_callback(self._on_train_end)
+
         return self.future
+
+    def _on_train_end(self, future):
+        gc.collect()
+        torch.cuda.empty_cache()
+
 
     def get_label_batch(self, k=20):
         def get_content(filename):
