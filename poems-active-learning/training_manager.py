@@ -1,21 +1,19 @@
-import collections
 import concurrent.futures
 import datetime
+import itertools
 import math
 import os.path
 from os import listdir
 
-import itertools
 import more_itertools
 import numpy as np
 import pandas
 import torch
 from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, RandomSampler, TensorDataset, SequentialSampler, Dataset
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, Dataset
 from tqdm import tqdm
 from transformers import AdamW
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import BertTokenizer
 from transformers import get_linear_schedule_with_warmup
 
 from model import BertForBRSequenceClassification
@@ -74,7 +72,7 @@ class TrainingManager:
                 .where(df['predicted_labels'].apply(lambda x: len(x) == 0)) \
                 .drop(columns=['labels', 'label_date']) \
                 .dropna()
-            docs = docs.append(unlabeled.sample(n=k-len(docs), replace=False))
+            docs = docs.append(unlabeled.sample(n=k - len(docs), replace=False))
 
         docs['predicted_labels'] = docs['predicted_labels'].apply(list)
         return docs
@@ -108,19 +106,21 @@ class TrainingManager:
         X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=0.20)
 
         # prepare dataloader
-        train_dataset = DocDataset(X_train.to_list(), tokenize_method=self._get_sequence, labels=Y_train.to_list(), cache=True)
+        train_dataset = DocDataset(X_train.to_list(), tokenize_method=self._get_sequence, labels=Y_train.to_list(),
+                                   cache=True)
         train_sampler = RandomSampler(train_dataset)
         train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=8)
 
-        validation_dataset = DocDataset(X_val.to_list(), tokenize_method=self._get_sequence, labels=Y_val.to_list(), cache=True)
+        validation_dataset = DocDataset(X_val.to_list(), tokenize_method=self._get_sequence, labels=Y_val.to_list(),
+                                        cache=True)
         validation_sampler = SequentialSampler(validation_dataset)
         validation_dataloader = DataLoader(validation_dataset, sampler=validation_sampler, batch_size=8)
 
         # init model
         model = BertForBRSequenceClassification.from_pretrained("bert-base-german-dbmdz-cased",
-                                                              num_labels=len(self.classes),
-                                                              attention_probs_dropout_prob=0.1,
-                                                              hidden_dropout_prob=0.1)
+                                                                num_labels=len(self.classes),
+                                                                attention_probs_dropout_prob=0.1,
+                                                                hidden_dropout_prob=0.1)
 
         epochs = 15
         total_steps = len(train_dataloader) * epochs
@@ -256,9 +256,10 @@ class DocDataset(Dataset):
                 self.cache[item] = encoded
 
         if self.labels is not None:
-            return [torch.tensor(encoded['input_ids']), torch.tensor(encoded['attention_mask']), self.documents[item], self.labels[item]]
+            return (torch.tensor(encoded['input_ids']), torch.tensor(encoded['attention_mask']), self.documents[item],
+                    self.labels[item])
         else:
-            return [torch.tensor(encoded['input_ids']), torch.tensor(encoded['attention_mask']), self.documents[item]]
+            return (torch.tensor(encoded['input_ids']), torch.tensor(encoded['attention_mask']), self.documents[item])
 
     def __len__(self):
         return len(self.documents)

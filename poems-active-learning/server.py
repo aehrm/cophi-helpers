@@ -1,11 +1,12 @@
 import asyncio
+import json
 import sys
 import traceback
 
-from training_manager import TrainingManager
-from aiohttp import web
-import json
 import pandas
+from aiohttp import web
+
+from training_manager import TrainingManager
 
 
 async def start_train_wrapper(app):
@@ -65,6 +66,7 @@ async def index(request):
 
 async def shutdown_handler(app):
     sys.exit(1)
+
 
 app = web.Application()
 app['manager'] = TrainingManager(document_dir='./poems', labeled_documents_file='./labeled_documents.tsv')

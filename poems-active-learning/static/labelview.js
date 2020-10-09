@@ -17,9 +17,11 @@ const getJSON = function (url) {
 
 const app = {};
 
-app.processLabelBatch = function(data) {
+app.processLabelBatch = function (data) {
     app.documents = data.docs;
-    app.documents.forEach(d => { d.labels = {} });
+    app.documents.forEach(d => {
+        d.labels = {}
+    });
 
     document.querySelector('.label-overview').innerHTML = '<span></span>'.repeat(data.docs.length);
     document.querySelector('#date').innerHTML = new Date(data.date).toLocaleString();
@@ -28,8 +30,8 @@ app.processLabelBatch = function(data) {
 
 };
 
-app.focusDoc = function(index) {
-    window.scrollTo(0, 0)
+app.focusDoc = function (index) {
+    window.scrollTo(0, 0);
     document.querySelectorAll('.label-overview > span').forEach((el, i) => {
         if (i == index) el.classList.add('focused');
         else el.classList.remove('focused');
@@ -37,7 +39,7 @@ app.focusDoc = function(index) {
 
     app.curindex = index;
     const doc = app.documents[index];
-    document.querySelector('#docid').innerHTML = `${index+1}/${app.documents.length}`;
+    document.querySelector('#docid').innerHTML = `${index + 1}/${app.documents.length}`;
     document.querySelector('#filename').innerHTML = doc.filename;
     document.querySelector('#prediction').innerHTML = doc['predicted_labels'];
     document.querySelector('#doc-content').innerHTML = doc.content;
@@ -51,12 +53,12 @@ app.focusDoc = function(index) {
     });
 };
 
-app.setLabel = function(label, val) {
+app.setLabel = function (label, val) {
     const doc = app.documents[app.curindex];
     doc.labels[label] = val;
 
     const indicator = document.querySelectorAll('.label-overview span')[app.curindex];
-    if (Object.values(doc.labels).reduce((a,b) => a || b, false)) {
+    if (Object.values(doc.labels).reduce((a, b) => a || b, false)) {
         indicator.classList.add('labeled');
     } else {
         indicator.classList.remove('labeled');
@@ -79,19 +81,19 @@ app.setLabel = function(label, val) {
     });
 };
 
-app.nextDoc = function() {
+app.nextDoc = function () {
     if (app.curindex < app.documents.length - 1) {
         app.focusDoc(app.curindex + 1)
     }
 };
 
-app.prevDoc = function() {
+app.prevDoc = function () {
     if (app.curindex > 0) {
         app.focusDoc(app.curindex - 1)
     }
 };
 
-app.start = function() {
+app.start = function () {
     return getJSON('/api/labelbatch').then((resp) => {
         app.processLabelBatch(resp);
         document.querySelector('body').style.display = 'block';
@@ -103,20 +105,20 @@ app.start = function() {
     });
 };
 
-app.upload = function() {
-    if (app.documents.some(d => Object.values(d.labels).reduce((a,b) => a || b, false))) {
+app.upload = function () {
+    if (app.documents.some(d => Object.values(d.labels).reduce((a, b) => a || b, false))) {
         if (!confirm('Some documents not labeled; proceed with upload?')) {
             return;
         }
     }
 
     const obj = {'labeled_docs': []};
-    obj['labeled_docs'] = app.documents.filter(d => Object.values(d.labels).reduce((a,b) => a || b, false))
+    obj['labeled_docs'] = app.documents.filter(d => Object.values(d.labels).reduce((a, b) => a || b, false))
         .map(d => {
-            return {'filename': d.filename, 'labels': Object.entries(d.labels).filter(x => x[1]).map(x => x[0]) }
+            return {'filename': d.filename, 'labels': Object.entries(d.labels).filter(x => x[1]).map(x => x[0])}
         });
     let xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/uploadbatch',  true);
+    xhr.open('POST', '/api/uploadbatch', true);
     xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
     xhr.send(JSON.stringify(obj));
 
@@ -126,7 +128,9 @@ app.upload = function() {
             alert('Upload complete and training started');
             xhr.open('GET', '/api/starttrain');
             xhr.send();
-            xhr.onloadend = () => { window.location.replace('/static/trainview.html'); }
+            xhr.onloadend = () => {
+                window.location.replace('/static/trainview.html');
+            }
         } else {
             alert('Unexpected error: ' + xhr.response)
         }

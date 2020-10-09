@@ -1,11 +1,13 @@
 import torch
 from torch import nn
-from torch.nn import MSELoss, CrossEntropyLoss
+from torch.nn import CrossEntropyLoss
 from transformers import BertPreTrainedModel, BertModel
 
 """Bert Model transformer with multiple independent binary sequence classification heads on top (a linear layer on top of
 the pooled output) to implement a multi-label classification in a "binary-relevance" fashion:
 """
+
+
 class BertForBRSequenceClassification(BertPreTrainedModel):
 
     def __init__(self, config):
@@ -17,21 +19,21 @@ class BertForBRSequenceClassification(BertPreTrainedModel):
         # binary classifier per each label
         self.classifiers = [nn.Linear(config.hidden_size, 2)] * self.num_labels
         for i, c in enumerate(self.classifiers):
-            self.add_module(f'classifier-class-{i+1}', c)
+            self.add_module(f'classifier-class-{i + 1}', c)
 
         self.init_weights()
 
     def forward(
-        self,
-        input_ids=None,
-        attention_mask=None,
-        token_type_ids=None,
-        position_ids=None,
-        head_mask=None,
-        inputs_embeds=None,
-        labels=None,
-        output_attentions=None,
-        output_hidden_states=None
+            self,
+            input_ids=None,
+            attention_mask=None,
+            token_type_ids=None,
+            position_ids=None,
+            head_mask=None,
+            inputs_embeds=None,
+            labels=None,
+            output_attentions=None,
+            output_hidden_states=None
     ):
         r"""
         labels (:obj:`torch.BoolTensor` of shape :obj:`(batch_size,num_labels)`, `optional`):
@@ -57,7 +59,8 @@ class BertForBRSequenceClassification(BertPreTrainedModel):
         loss = None
         if labels is not None:
             loss_fct = CrossEntropyLoss(reduction='sum')
-            loss = torch.stack([loss_fct(logits, labels) for (logits, labels) in zip(label_binary_logits, labels.long().permute(1,0))])
+            loss = torch.stack([loss_fct(logits, labels) for (logits, labels) in
+                                zip(label_binary_logits, labels.long().permute(1, 0))])
 
-        output = (label_binary_logits.permute(1,0,2),) + outputs[2:]
+        output = (label_binary_logits.permute(1, 0, 2),) + outputs[2:]
         return ((loss,) + output) if loss is not None else output
