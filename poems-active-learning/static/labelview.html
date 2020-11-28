@@ -1,0 +1,74 @@
+<!DOCTYPE>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        #doc-content {
+            margin-top: 2em;
+            font-size: 150%;
+            min-height: 30em;
+        }
+
+        .control-container {
+            display: inline-block;
+            text-align: center;
+        }
+
+        .label-button {
+            border: 1px solid gray;
+            padding: 6px;
+            margin: 0 .2em 0 .2em;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .label-button.selected {
+            background-color: #ddd;
+        }
+
+        .control-button {
+            margin: 0 1em;
+            font-size: 200%;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        .label-overview > span:before{
+            margin: 0 0.1em;
+            content: '○';
+        }
+
+        .label-overview > span.focused:before {
+            border-bottom: 2px solid black;
+        }
+
+        .label-overview > span.labeled:before {
+            content: '●';
+        }
+    </style>
+</head>
+
+<body style="display: none">
+    <h2>Label Query</h2>
+    <p>Generated <span id="date"></span></p>
+
+    <h3>Document <span id="docid">4/20</span></h3>
+    <p>Filename: <span id="filename"></span>, Model Prediction: <span id="prediction"></span>)</p>
+
+    <pre id="doc-content"></pre>
+
+    <div class="control-container">
+        <p><span class="control-button">&larr;</span> <span data-label="Liebe" class="label-button">Liebe</span> <span data-label="Natur" class="label-button">Natur</span> <span data-label="O" class="label-button">(other)</span> <span class="control-button">&rarr;</span></p>
+        <p class="label-overview"></p>
+    </div>
+
+    <p><button id="submit">Submit Labeling</button></p>
+</body>
+
+<script src="labelview.js"></script>
+</html>
