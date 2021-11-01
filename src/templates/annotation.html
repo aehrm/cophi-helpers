@@ -11,7 +11,8 @@
     </select>
     <button name="save">Speichern</button>
     <button name="end">Session beenden</button>
-    <span class="version"></span>
+    <span class="version">Version: <%= GIT_VERSION %></span>
+    <a href="#">Dark Mode</a>
     </p>
     
 </div>
@@ -23,13 +24,21 @@
         <pre class="text-right"><%= prompt.text_right.content %></pre>
     </div>
 
-    <div class="radio-form">
+    <table class="radio-form">
+        <tr class="radio-header"><td></td>
+            <td>ähnelt der mittige Text eher dem linken Text</td>
+            <td>ähnelt der mittige Text dem linken und rechten Text gleich stark</td>
+            <td>ähnelt der mittige Text eher dem rechten Text</td>
+        </tr>
         <% for (const p of prompt.radioAnnotations) { %>
-        <div>
-           <label><%= p.label %></label><span class="radio-container"><input type="radio" name="<%= p.key %>" value="left" <%= p.value === 'left' ? 'checked' : ''%>></span><span class="radio-container"><input type="radio" name="<%= p.key %>" value="same" <%= p.value === 'same' ? 'checked' : ''%>></span><span class="radio-container"><input type="radio" name="<%= p.key %>" value="right" <%= p.value === 'right' ? 'checked' : ''%>></span>
-        </div>
+        <tr class="radio-row">
+           <td><label><%= p.label %></label></td>
+           <td class="radio-container"><input type="radio" name="<%= p.key %>" value="left" <%= p.value === 'left' ? 'checked' : ''%>></td>
+           <td class="radio-container"><input type="radio" name="<%= p.key %>" value="same" <%= p.value === 'same' ? 'checked' : ''%>></td>
+           <td class="radio-container"><input type="radio" name="<%= p.key %>" value="right" <%= p.value === 'right' ? 'checked' : ''%>></td>
+        </tr>
         <% } %>
-    </div>
+    </table>
 
     <div class="decision-container">
         <label>Am wichtigsten für die Entscheidung, diese zwei Texte insgesamt als (relativ) ähnlich anzusehen, war</label>
@@ -39,7 +48,7 @@
                 <% for (const p of prompt.radioAnnotations) { %>
                 <option value="<%= p.key %>" <%= prompt.decisionAnnotation.value === p.key ? 'selected' : '' %>>der Aspekt '<%= p.label %>'</option>
                 <% }
-                const textInput = !_.chain(radioPrompts).pluck('key').includes(prompt.decisionAnnotation.value).value();
+                const textInput = !_.chain(radioPrompts).pluck('key').includes(prompt.decisionAnnotation.value).value() && prompt.decisionAnnotation.value !== null;
                 %>
   				<option value="same" <%= textInput ? 'selected' : '' %>>ein anderer Aspekt, und zwar ... [input]</option>
 			</select>

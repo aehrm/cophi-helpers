@@ -73,15 +73,18 @@ const AnnotationStore = Backbone.Model.extend({
     }
 });
 
-const DEBUG = { "description": { "title": "Annotation Test" }, "prompts": [ { "text_base": { "id": "text001", "content": "Basistext" }, "text_left": { "id": "text002", "content": "Text Links" }, "text_right": { "id": "text003", "content": "Text Rechts" }, "annotations": { "Anton": { "inhaltlich": "left", "insgesamt": "same", "entscheidung": "Bauchgefühl" } } }, { "text_base": { "id": "text001", "content": "Basistext" }, "text_left": { "id": "text002", "content": "Text Links" }, "text_right": { "id": "text003", "content": "Text Rechts" } } ] }
-
 const AppView = Backbone.View.extend({
     el: '.app-container',
     initialize: function() {
-        // FIXME
-        //this.showLogin();
-        const store = new AnnotationStore(DEBUG);
-        this.showMain({store: store, username: 'Anton', filename: 'demo.json'});
+        if (window.localStorage.getItem('poem_similarity') !== null) {
+            const ls = JSON.parse(window.localStorage.getItem('poem_similarity'))
+            ls.store = new AnnotationStore(ls.store);
+            this.showMain(ls);
+        } else {
+            this.showLogin();
+        }
+        //const store = new AnnotationStore(DEBUG);
+        //this.showMain({store: store, username: 'Anton', filename: 'demo.json'});
     },
     setContent: function(view) {
         if (!!this.currentView)
@@ -103,7 +106,10 @@ const StartView = Backbone.View.extend({
     tagName: 'div',
     className: 'login',
     template: require('../templates/startview.html'),
-    events: { 'submit .start-form': 'form' },
+    events: {
+        'submit .start-form': 'form', 
+        'click .start-header a[href]': 'toggleTheme'
+    },
     render: function() {
         this.$el.html(this.template());
         return this;
@@ -135,6 +141,9 @@ const StartView = Backbone.View.extend({
         };
         reader.readAsText(file, 'UTF-8');
 
+    },
+    toggleTheme: function() {
+        $('body').toggleClass('dark');
     }
 });
 
@@ -146,15 +155,21 @@ const AnnotationView = Backbone.View.extend({
         Object.assign(this, options);
 
         this.modified = false;
-        this.gotoPrompt(_.find([...Array(this.store.get('prompts').length).keys()], (i) => !this.store.get('prompts').at(i).isDone(this.username)) || 0);
+
+        if (this.currentIndex === undefined) {
+            this.gotoPrompt(_.find([...Array(this.store.get('prompts').length).keys()], (i) => !this.store.get('prompts').at(i).isDone(this.username)) || 0);
+        } else {
+            this.gotoPrompt(this.currentIndex);
+        }
     },
     events: {
-        'focus .prompt-container input[type="radio"]':  'resetRadio',
-        'click .prompt-container input[type="radio"]':  'resetRadio',
+        //'focus .prompt-container input[type="radio"]':  'resetRadio',
+        'click .prompt-container input[type="radio"]':  'processForm',
         'input .prompt-container input, .prompt-container select': 'processForm',
         'click .navigation button': 'processNavigation',
         'input .annotation-header select': 'processPromptSelection',
-        'click .annotation-header button': 'processSave'
+        'click .annotation-header button': 'processSave',
+        'click .annotation-header a[href]': 'toggleTheme'
     },
     render: function() {
         this.$el.html(this.template({
@@ -167,11 +182,23 @@ const AnnotationView = Backbone.View.extend({
         return this;
     },
     processForm: function(ev) {
+        console.log(ev.type)
+        if (ev.type == 'click')
+            this.lastClick = new Date().getTime();
+        if (ev.type == 'input' && new Date().getTime() - this.lastClick < 100) {
+            return;
+        }
+
         const currentPrompt = this.store.get('prompts').at(this.currentIndex)
         const wasDone = currentPrompt.isDone(this.username);
 
         if ($(ev.target).is('input[type="radio"]')) {
-            currentPrompt.setAnnotation(this.username, ev.target.name, ev.target.checked ? ev.target.value : null);
+            if (currentPrompt.getAnnotation(this.username, ev.target.name) == ev.target.value) {
+                currentPrompt.setAnnotation(this.username, ev.target.name, null);
+                ev.target.checked = false;
+            } else {
+                currentPrompt.setAnnotation(this.username, ev.target.name, ev.target.value);
+            }
         } else if ($(ev.target).is('select') && ev.target.value !== 'same') {
             currentPrompt.setAnnotation(this.username, ev.target.name, ev.target.value === 'empty' ? null : ev.target.value);
             this.$el.find('input[type="text"]').hide();
@@ -186,26 +213,16 @@ const AnnotationView = Backbone.View.extend({
             this.render();
         }
 
+        const ls = {store: this.store, username: this.username, currentIndex: this.currentIndex };
+        window.localStorage.setItem('poem_similarity', JSON.stringify(ls));
+
         this.modified = true;
 
     },
-    resetRadio: function(ev) {
-        const el = $(ev.target);
-        if (ev.type === 'click') {
-            ev.target.checked = el.data('prev');
-            return;
-        }
-
-        if (ev.target.checked) {
-            ev.target.checked = false;
-            ev.preventDefault();
-            el.data('prev', false);
-        } else {
-            el.data('prev', true);
-        }
-    },
     gotoPrompt: function(i) {
         this.currentIndex = i;
+        const ls = {store: this.store, username: this.username, currentIndex: this.currentIndex };
+        window.localStorage.setItem('poem_similarity', JSON.stringify(ls));
         this.render();
     },
     processNavigation: function(ev) {
@@ -252,6 +269,9 @@ const AnnotationView = Backbone.View.extend({
             window.localStorage.removeItem('poem_similarity');
             this.app.showLogin();
         }
+    },
+    toggleTheme: function() {
+        $('body').toggleClass('dark');
     }
 });
 

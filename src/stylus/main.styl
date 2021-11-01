@@ -1,9 +1,71 @@
+@import '../../node_modules/normalize.css/normalize.css'
+
 body
     font-family sans-serif
     font-size 15px
+    margin 2em
+    background-color #f2f2f2
 
-.annotation-header
-    font-size 1.3em
+body.dark
+    background-color #2b2b2b
+    color #eee
+    input, button, select
+        border 1px solid #888
+        color #eee
+        background-color #333
+
+        &:hover
+            background-color #555
+
+input, button, select
+    font-size 1rem
+
+.annotation-header, .start-header
+    font-size 1.3rem
     font-weight bolder
+    margin-bottom 3em
+
+    a[href], .version
+        font-size 0.8rem
+        font-weight normal
+        float right
+
+    a[href]
+        margin-right 20px
+        text-decoration none
+        color inherit
 
 
+.text-container
+    width 100%
+    display flex
+    justify-content center
+    margin 3em 0
+
+    > pre
+        min-width 400px
+        margin 0 20px
+        font-family sans-serif
+
+
+.radio-form
+    margin 3em auto
+    width 600px
+
+    .radio-row label
+        margin 10px
+        font-weight bolder
+
+    tr > td:not(:first-child)
+        text-align center
+
+    tr.radio-header td
+        font-size 0.7rem
+
+
+.decision-container
+    margin 3em 0
+    display flex
+    label
+        max-width 400px
+        
