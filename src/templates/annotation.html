@@ -45,7 +45,7 @@
         <div class="decision-form">
             <select name="entscheidung">
                 <option value="empty" <%= prompt.decisionAnnotation.value === null ? 'selected' : '' %>>[select]</option>
-                <% for (const p of prompt.radioAnnotations) { %>
+                <% for (const p of decisionValues) { %>
                 <option value="<%= p.key %>" <%= prompt.decisionAnnotation.value === p.key ? 'selected' : '' %>>der Aspekt '<%= p.label %>'</option>
                 <% }
                 const textInput = !_.chain(radioPrompts).pluck('key').includes(prompt.decisionAnnotation.value).value() && prompt.decisionAnnotation.value !== null;

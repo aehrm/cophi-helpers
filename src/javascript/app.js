@@ -10,6 +10,13 @@ const RADIO_PROMPTS = [
     { label: 'Insgesamt', key: 'insgesamt'},
 ];
 
+const DECISION_VALUES = [
+    { label: 'Inhaltlich', key: 'inhaltlich'},
+    { label: 'Emotional', key: 'emotional'},
+    { label: 'Sprachlich', key: 'sprachlich'},
+    { label: 'Formal', key: 'formal'}
+];
+
 const Prompt = Backbone.Model.extend({
 
     getTemplateObject: function(user) {
@@ -176,6 +183,7 @@ const AnnotationView = Backbone.View.extend({
             store: this.store,
             index: this.currentIndex,
             radioPrompts: RADIO_PROMPTS,
+            decisionValues: DECISION_VALUES,
             username: this.username,
             prompt: this.store.get('prompts').at(this.currentIndex).getTemplateObject(this.username)
         }));
