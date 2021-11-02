@@ -6,12 +6,16 @@
 
 <form class="start-form">
     <div>
-        <label for="name">Dein Name</label>
-        <input type="text" name="name" required>
+        <label for="email">Annotationsdatei</label>
+        <input type="file" name="file">
     </div>
     <div>
-        <label for="email">Annotationsdatei</label>
-        <input type="file" name="file" required>
+        <label for="name">Dein Name</label>
+        <div>
+            <select name="name-dropdown">
+            </select>
+            <input type="text" name="name" placeholder="Neuer Name">
+        <div>
     </div>
     <div>
         <input type="submit" value="Start"></input>

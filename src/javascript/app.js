@@ -106,8 +106,9 @@ const StartView = Backbone.View.extend({
     className: 'login',
     template: require('../templates/startview.html'),
     events: {
+        'click .start-header a[href]': 'toggleTheme',
+        'input .start-form input[name="file"]': 'updateFile', 
         'submit .start-form': 'form', 
-        'click .start-header a[href]': 'toggleTheme'
     },
     render: function() {
         this.$el.html(this.template());
@@ -116,20 +117,34 @@ const StartView = Backbone.View.extend({
     initialize: function(options) {
         Object.assign(this, options);
     },
-    form: function(ev) {
-        ev.preventDefault();
-
-        // Read File
+    updateFile: function() {
         const file = this.$el.find('input[name="file"]')[0].files[0]
         const reader = new FileReader();
         reader.onload = (e) => {
             const content = e.target.result;
             try {
-                const parsed = JSON.parse(content);
-                const store = new AnnotationStore(parsed);
-                const username = this.$el.find('input[name="name"]').first().val();
+                this.parsed = JSON.parse(content);
+                this.file = file;
 
-                this.app.showMain({store: store, username: username, filename: file.name});
+                const annotatorCandidates = _.chain(this.parsed.prompts)
+                    .filter(p => !!p.annotations)
+                    .map(p => Object.keys(p.annotations))
+                    .flatten().value();
+
+                this.$el.find('select').empty();
+                _.each(annotatorCandidates, (c) => {
+                    this.$el.find('select').append($('<option>', { 
+                        value: c,
+                        text : c 
+                    }))
+                });
+
+                this.$el.find('.error').first().hide();
+                if (annotatorCandidates.length > 0) {
+                    this.$el.find('input[name="name"]').removeAttr('required');
+                } else {
+                    this.$el.find('input[name="name"]').attr('required', 'required');
+                }
             } catch (e) {
                 if (e instanceof SyntaxError) {
                     this.$el.find('.error').first().show();
@@ -139,6 +154,19 @@ const StartView = Backbone.View.extend({
             }
         };
         reader.readAsText(file, 'UTF-8');
+    },
+    form: function(ev) {
+        ev.preventDefault();
+
+        if (!this.file) return;
+
+        const store = new AnnotationStore(this.parsed);
+        let username = this.$el.find('input[name="name"]').first().val();
+        if (username == "") {
+            username = this.$el.find('select').val();
+        }
+
+        this.app.showMain({store: store, username: username, filename: this.file.name});
 
     },
     toggleTheme: function() {
