@@ -41,11 +41,20 @@ input, button, select
     display flex
     justify-content center
     margin 3em 0
+    min-width min-content
+    min-width -webkit-min-content
+    min-width -moz-min-content
 
-    > pre
-        min-width 400px
+    > div
+        flex-shrink 0
+        min-width 200px
         margin 0 20px
-        font-family sans-serif
+        > pre
+            margin 0
+            font-family sans-serif
+        > h3
+            font-size 1.1em
+            margin-top 0
 
 
 .radio-form

@@ -19,9 +19,17 @@
 
 <div class="prompt-container">
     <div class="text-container">
-        <pre class="text-left"><%= prompt.text_left.content %></pre>
-        <pre class="text-base"><%= prompt.text_base.content %></pre>
-        <pre class="text-right"><%= prompt.text_right.content %></pre>
+        <% for (const k of ['left', 'base', 'right']) { const text = prompt['text_'+k]; %>
+        <div class="text-<%= k %>">
+            <% if (!!text.author || !!text.title) { %>
+            <h3>
+                <%= text.author ? (text.author + ": ") : "" %>
+                <%= text.title ? text.title : "" %>
+            </h3>
+            <% } %>
+            <pre><%= text.content %></pre>
+        </div>
+        <% } %>
     </div>
 
     <table class="radio-form">
