@@ -256,11 +256,10 @@ const AnnotationView = Backbone.View.extend({
         }
 
 
-        if (ev.target.name == 'save') {
-            const output = JSON.stringify(this.store)
-            downloadBlob(new Blob([output]), this.filename)
-            this.modified = false;
-        } else if (ev.target.name == 'end') {
+        const output = JSON.stringify(this.store)
+        downloadBlob(new Blob([output]), this.store.get('description').title.replace(' ', '_') + '_' + this.username + '_' + new Date().toISOString().replace(/:[0-9]{2}\..*/, '') + '.json')
+        this.modified = false;
+
             if (this.modified) {
                 const conf = window.confirm('Änderungen wurden noch nicht gespeichert! Sicher, dass Du die Session beenden willst, und die Änderungen verlieren willst?')
                 if (!conf) return;
