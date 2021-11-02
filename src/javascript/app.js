@@ -83,15 +83,7 @@ const AnnotationStore = Backbone.Model.extend({
 const AppView = Backbone.View.extend({
     el: '.app-container',
     initialize: function() {
-        if (window.localStorage.getItem('poem_similarity') !== null) {
-            const ls = JSON.parse(window.localStorage.getItem('poem_similarity'))
-            ls.store = new AnnotationStore(ls.store);
-            this.showMain(ls);
-        } else {
-            this.showLogin();
-        }
-        //const store = new AnnotationStore(DEBUG);
-        //this.showMain({store: store, username: 'Anton', filename: 'demo.json'});
+        this.showLogin();
     },
     setContent: function(view) {
         if (!!this.currentView)
@@ -168,6 +160,7 @@ const AnnotationView = Backbone.View.extend({
         } else {
             this.gotoPrompt(this.currentIndex);
         }
+
     },
     events: {
         //'focus .prompt-container input[type="radio"]':  'resetRadio',
@@ -221,16 +214,11 @@ const AnnotationView = Backbone.View.extend({
             this.render();
         }
 
-        const ls = {store: this.store, username: this.username, currentIndex: this.currentIndex };
-        window.localStorage.setItem('poem_similarity', JSON.stringify(ls));
-
         this.modified = true;
 
     },
     gotoPrompt: function(i) {
         this.currentIndex = i;
-        const ls = {store: this.store, username: this.username, currentIndex: this.currentIndex };
-        window.localStorage.setItem('poem_similarity', JSON.stringify(ls));
         this.render();
     },
     processNavigation: function(ev) {
@@ -263,19 +251,19 @@ const AnnotationView = Backbone.View.extend({
             document.body.removeChild(link);
         }
 
-
-        const output = JSON.stringify(this.store)
-        downloadBlob(new Blob([output]), this.store.get('description').title.replace(' ', '_') + '_' + this.username + '_' + new Date().toISOString().replace(/:[0-9]{2}\..*/, '') + '.json')
-        this.modified = false;
-
+        if (ev.target.name == 'save') {
+            const output = JSON.stringify(this.store)
+            downloadBlob(new Blob([output]), this.store.get('description').title.replace(' ', '_') + '_' + this.username + '_' + new Date().toISOString().replace(/:[0-9]{2}\..*/, '') + '.json')
+            this.modified = false;
+        } else if (ev.target.name == 'end') {
             if (this.modified) {
                 const conf = window.confirm('Änderungen wurden noch nicht gespeichert! Sicher, dass Du die Session beenden willst, und die Änderungen verlieren willst?')
                 if (!conf) return;
             }
 
-            window.localStorage.removeItem('poem_similarity');
             this.app.showLogin();
         }
+
     },
     toggleTheme: function() {
         $('body').toggleClass('dark');
@@ -285,4 +273,9 @@ const AnnotationView = Backbone.View.extend({
 
 $(() => {
     const appView = new AppView();
+    window.addEventListener('beforeunload', (event) => {
+        if (appView.currentView instanceof AnnotationView && appView.currentView.modified) {
+            event.returnValue = 'You have unfinished changes!';
+        }
+    });
 })
