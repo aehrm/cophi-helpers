@@ -1,0 +1,70 @@
+<div class="annotation-header">
+    <p>
+    <span><%= store.get('description').title %>, User: <%= username %></span>
+    <select name="prompt-sel">
+        <% for (const i of [...Array(store.get('prompts').length).keys()]) { %>
+        <option value="<%= i%>"
+                <%= i === index ? 'selected' : '' %>>
+                #<%= i+1 %> <%= store.get('prompts').at(i).isDone(username) ? 'fertig' : ''%>
+        </option>
+        <% } %>
+    </select>
+    <button name="save">Speichern</button>
+    <button name="end">Zum Start zurückkehren</button>
+    <span class="version">Version: <%= GIT_VERSION %></span>
+    <a href="#">Dark Mode</a>
+    </p>
+    
+</div>
+
+<div class="prompt-container">
+    <div class="text-container">
+        <% for (const k of ['left', 'base', 'right']) { const text = prompt['text_'+k]; %>
+        <div class="text-<%= k %>">
+            <% if (!!text.author || !!text.title) { %>
+            <h3>
+                <%= text.author ? (text.author + ": ") : "" %>
+                <%= text.title ? text.title : "" %>
+            </h3>
+            <% } %>
+            <pre><%= text.content %></pre>
+        </div>
+        <% } %>
+    </div>
+
+    <table class="radio-form">
+        <tr class="radio-header"><td></td>
+            <td>ähnelt der mittige Text eher dem linken Text</td>
+            <td>ähnelt der mittige Text dem linken und rechten Text gleich stark</td>
+            <td>ähnelt der mittige Text eher dem rechten Text</td>
+        </tr>
+        <% for (const p of prompt.radioAnnotations) { %>
+        <tr class="radio-row">
+           <td><label><%= p.label %></label></td>
+           <td class="radio-container"><input type="radio" name="<%= p.key %>" value="left" <%= p.value === 'left' ? 'checked' : ''%>></td>
+           <td class="radio-container"><input type="radio" name="<%= p.key %>" value="same" <%= p.value === 'same' ? 'checked' : ''%>></td>
+           <td class="radio-container"><input type="radio" name="<%= p.key %>" value="right" <%= p.value === 'right' ? 'checked' : ''%>></td>
+        </tr>
+        <% } %>
+    </table>
+
+    <div class="decision-container">
+        <label>Am wichtigsten für die Entscheidung, diese zwei Texte insgesamt als (relativ) ähnlich anzusehen, war</label>
+        <div class="decision-form">
+            <select name="entscheidung">
+                <option value="empty" <%= prompt.decisionAnnotation.value === null ? 'selected' : '' %>>[select]</option>
+                <% for (const p of decisionValues) { %>
+                <option value="<%= p.key %>" <%= prompt.decisionAnnotation.value === p.key ? 'selected' : '' %>>der Aspekt '<%= p.label %>'</option>
+                <% }
+                const textInput = !_.chain(radioPrompts).pluck('key').includes(prompt.decisionAnnotation.value).value() && prompt.decisionAnnotation.value !== null;
+                %>
+  				<option value="same" <%= textInput ? 'selected' : '' %>>ein anderer Aspekt, und zwar ... [input]</option>
+			</select>
+            <input type="text" style="<%= textInput ? '' : 'display: none' %>" value="<%= textInput ? prompt.decisionAnnotation.value : '' %>">
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button name="back">Zurück</button><button name="next">Weiter</button>
+    </div>
+</div>

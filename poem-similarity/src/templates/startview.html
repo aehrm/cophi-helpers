@@ -1,0 +1,27 @@
+<div class="start-header">
+    <span>Start</span>
+    <span class="version">Version: <%= GIT_VERSION %></span>
+    <a href="#">Dark Mode</a>
+</div>
+
+<form class="start-form">
+    <div>
+        <label for="email">Annotationsdatei</label>
+        <input type="file" name="file">
+    </div>
+    <div>
+        <label for="name">Dein Name</label>
+        <div>
+            <select name="name-dropdown">
+            </select>
+            <input type="text" name="name" placeholder="Neuer Name">
+        <div>
+    </div>
+    <div>
+        <input type="submit" value="Start"></input>
+    </div>
+    <div class="error" style="display: none">
+        Das hat nicht geklappt! Bitte Datei überprüfen.
+    </div>
+</form>
+
