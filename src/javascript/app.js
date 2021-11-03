@@ -129,7 +129,7 @@ const StartView = Backbone.View.extend({
                 const annotatorCandidates = _.chain(this.parsed.prompts)
                     .filter(p => !!p.annotations)
                     .map(p => Object.keys(p.annotations))
-                    .flatten().value();
+                    .flatten().uniq().value();
 
                 this.$el.find('select').empty();
                 _.each(annotatorCandidates, (c) => {
