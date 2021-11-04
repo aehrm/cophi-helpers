@@ -436,5 +436,5 @@ select {
   display: flex;
 }
 .decision-container label {
-  min-width: 300px;
+  max-width: 300px;
 }
