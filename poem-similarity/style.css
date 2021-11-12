@@ -431,10 +431,3 @@ select {
 .radio-form tr.radio-header td {
   font-size: 0.7rem;
 }
-.decision-container {
-  margin: 3em 0;
-  display: flex;
-}
-.decision-container label {
-  max-width: 300px;
-}
